@@ -1,0 +1,10 @@
+[
+    {
+        "caption": "Qiita: Create Private Item",
+        "command": "new_qiita_item"
+    },
+    {
+        "caption": "Qiita: Open Item",
+        "command": "open_qiita_item"
+    },
+]
