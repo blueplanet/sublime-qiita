@@ -23,20 +23,33 @@ def plugin_loaded():
     qiita_token = settings.get('token')
 
 
-class NewQiitaItemCommand(QiitaCommandBase):
+class QiitaPostNewItemCommand(QiitaCommandBase):
 
     def run(self):
         thread = NewItemThread(self.window)
         thread.start()
         ThreadProgress(thread, 'Post new item to qiita', 'Done.')
 
+    # def is_enabled(self):
+    #     item = self.window.active_view().settings().get('Qiita_item')
+    #     return True
 
-class OpenQiitaItemCommand(QiitaCommandBase):
+
+class QiitaOpenItemCommand(QiitaCommandBase):
 
     def run(self):
         thread = ListItemsThread(self.window)
         thread.start()
         ThreadProgress(thread, 'Loding items from qiita', 'Done.')
+
+
+class QiitaOpenItemUrlCommand(QiitaCommandBase):
+
+    def run(self):
+        webbrowser.open_new_tab(self.qiita_item().get('url'))
+
+    def is_enabled(self):
+        return self.qiita_item() != None and self.qiita_item().get('url') != None
 
 
 class NewItemThread(threading.Thread):
@@ -127,7 +140,6 @@ class GetItemThread(threading.Thread):
 
         # self.window.run_command('show_panel', {'panel': 'output.qiita_info'})
     def build_view(self, view, item):
-        view.settings().set('Qiita', True)
         view.settings().set('Qiita_item', item)
 
         view.run_command('append', {'characters': item.get('raw_body')})
@@ -138,6 +150,9 @@ class QiitaCommandBase(sublime_plugin.WindowCommand):
     def __init__(self, window):
 
         self.window = window
+
+    def qiita_item(self):
+        return self.window.active_view().settings().get('Qiita_item')
 
 def api_request(url):
     res = request.urlopen(url)

@@ -1,10 +1,14 @@
 [
     {
-        "caption": "Qiita: Create Private Item",
-        "command": "new_qiita_item"
+        "caption": "Qiita: Post New Item",
+        "command": "qiita_post_new_item"
     },
     {
         "caption": "Qiita: Open Item",
-        "command": "open_qiita_item"
+        "command": "qiita_open_item"
+    },
+    {
+        "caption": "Qiita: Open Item Url",
+        "command": "qiita_open_item_url"
     },
 ]
