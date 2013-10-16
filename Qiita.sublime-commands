@@ -11,4 +11,8 @@
         "caption": "Qiita: Open Item Url",
         "command": "qiita_open_item_url"
     },
+    {
+        "caption": "Qiita: Show Item Info",
+        "command": "qiita_show_item_info"
+    },
 ]
