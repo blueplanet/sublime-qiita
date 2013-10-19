@@ -35,6 +35,17 @@ def api_request(url_or_request):
     return json.loads(res.read().decode(encoding))
 
 
+def build_tag_str(tags):
+    tag_str = ''
+    for tag in tags:
+        if len(tag_str) > 0:
+            tag_str += ', '
+
+        tag_str += tag.get('name')
+
+    return tag_str
+
+
 class QiitaCommandBase(sublime_plugin.WindowCommand):
 
     def __init__(self, window):
@@ -160,11 +171,7 @@ class GetItemsThread(threading.Thread):
         for item in self.full_items:
             title = item.get('title')
             updated_at_in_words = item.get('updated_at_in_words')
-            tag_str = ''
-            for tag in item.get('tags'):
-                if tag_str != '':
-                    tag_str += ', '
-                tag_str += tag.get('name')
+            tag_str = build_tag_str(item.get('tags'))
 
             item_info = [title, "更新：" + updated_at_in_words + " タグ：" + tag_str]
             items.append(item_info)
@@ -200,15 +207,6 @@ class GetItemThread(threading.Thread):
         view.settings().set('qiita_item', item)
 
         view.run_command('append', {'characters': item.get('title') + "\n"})
-        view.run_command('append', {'characters': self.build_tag_str(item.get('tags')) + "\n"})
+        view.run_command('append', {'characters': build_tag_str(item.get('tags')) + "\n"})
         view.run_command('append', {'characters': item.get('raw_body')})
 
-    def build_tag_str(self, tags):
-        tag_str = ''
-        for tag in tags:
-            if len(tag_str) > 0:
-                tag_str += ', '
-
-            tag_str += tag.get('name')
-
-        return tag_str
