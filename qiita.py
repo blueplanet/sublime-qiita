@@ -25,6 +25,21 @@ def plugin_loaded():
     qiita_token = settings.get('token')
 
 
+def api_request(url_or_request):
+    res = urllib.request.urlopen(url_or_request)
+    encoding = res.headers.get_content_charset()
+    return json.loads(res.read().decode(encoding))
+
+
+class QiitaCommandBase(sublime_plugin.WindowCommand):
+
+    def __init__(self, window):
+        self.window = window
+
+    def qiita_item(self):
+        return self.window.active_view().settings().get('qiita_item')
+
+
 class QiitaPostNewItemCommand(QiitaCommandBase):
 
     def run(self):
@@ -194,16 +209,3 @@ class GetItemThread(threading.Thread):
         view.run_command('append', {'characters': item.get('raw_body')})
 
 
-class QiitaCommandBase(sublime_plugin.WindowCommand):
-
-    def __init__(self, window):
-        self.window = window
-
-    def qiita_item(self):
-        return self.window.active_view().settings().get('qiita_item')
-
-
-def api_request(url_or_request):
-    res = urllib.request.urlopen(url_or_request)
-    encoding = res.headers.get_content_charset()
-    return json.loads(res.read().decode(encoding))
