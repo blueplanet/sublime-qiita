@@ -4,8 +4,12 @@
         "command": "qiita_post_new_item"
     },
     {
-        "caption": "Qiita: Open Item",
-        "command": "qiita_open_item"
+        "caption": "Qiita: Get Item List",
+        "command": "qiita_get_items"
+    },
+    {
+        "caption": "Qiita: Update Item",
+        "command": "qiita_update_item"
     },
     {
         "caption": "Qiita: Open Item Url",

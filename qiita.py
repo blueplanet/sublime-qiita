@@ -13,10 +13,12 @@ from .thread_progress import ThreadProgress
 
 def plugin_loaded():
     global BASE_URL
+    global HEADERS
     global qiita_user
     global qiita_token
 
     BASE_URL = 'https://qiita.com/api/v1'
+    HEADERS = {"Accept": "application/json", "Content-type": "application/json"}
 
     settings = sublime.load_settings('Qiita.sublime-settings')
     qiita_user = settings.get('username')
@@ -26,7 +28,7 @@ def plugin_loaded():
 class QiitaPostNewItemCommand(QiitaCommandBase):
 
     def run(self):
-        thread = NewItemThread(self.window)
+        thread = PostNewItemThread(self.window)
         thread.start()
         ThreadProgress(thread, 'Post new item to qiita', 'Done.')
 
@@ -34,12 +36,24 @@ class QiitaPostNewItemCommand(QiitaCommandBase):
         return self.qiita_item() == None or self.qiita_item().get('url') == None
 
 
-class QiitaOpenItemCommand(QiitaCommandBase):
+class QiitaGetItemsCommand(QiitaCommandBase):
 
     def run(self):
-        thread = ListItemsThread(self.window)
+        thread = GetItemsThread(self.window)
         thread.start()
-        ThreadProgress(thread, 'Loding items from qiita', 'Done.')
+        ThreadProgress(thread, 'Geting item list from qiita', 'Done.')
+
+
+class QiitaUpdateItemCommand(QiitaCommandBase):
+
+    def run(self):
+        uuid = self.qiita_item().get('uuid')
+        thread = UpdateItemThread(self.window, uuid)
+        thread.start()
+        ThreadProgress(thread, 'Update item to qiita', 'Done.')
+
+    def is_enabled(self):
+        return self.qiita_item() != None and self.qiita_item().get('url') != None
 
 
 class QiitaOpenItemUrlCommand(QiitaCommandBase):
@@ -57,8 +71,10 @@ class QiitaShowItemInfo(QiitaCommandBase):
         str = "uuid: %s \nurl: %s" % (self.qiita_item().get('uuid'), self.qiita_item().get('url'))
         sublime.message_dialog(str)
 
+    def is_enabled(self):
+        return self.qiita_item() != None and self.qiita_item().get('url') != None
 
-class NewItemThread(threading.Thread):
+class PostNewItemThread(threading.Thread):
 
     def __init__(self, window):
         self.window = window
@@ -67,9 +83,8 @@ class NewItemThread(threading.Thread):
     def run(self):
         data = self.get_item_data()
         url = BASE_URL + '/items?token=%s' % qiita_token
-        headers = {"Accept": "application/json", "Content-type": "application/json"}
 
-        req = request.Request(url, data, headers)
+        req = urllib.request.Request(url, data, HEADERS)
         res = api_request(req)
 
         webbrowser.open_new_tab(res.get('url'))
@@ -89,7 +104,35 @@ class NewItemThread(threading.Thread):
         return bytes(json.dumps(item_data), 'UTF-8')
 
 
-class ListItemsThread(threading.Thread):
+class UpdateItemThread(threading.Thread):
+
+    def __init__(self, window, uuid):
+        self.window = window
+        self.uuid = uuid
+        threading.Thread.__init__(self)
+
+    def run(self):
+        data = self.get_item_data()
+        url = BASE_URL + '/items/%s?token=%s' % ( self.uuid, qiita_token)
+
+        req = urllib.request.Request(url, data=data, headers=HEADERS, method='PUT')
+        res = api_request(req)
+
+        webbrowser.open_new_tab(res.get('url'))
+
+    def get_item_data(self):
+        qiita_item = self.window.active_view().settings().get('qiita_item')
+        item_data = {}
+
+        item_data['title'] = qiita_item.get('title')
+        item_data['tags'] = qiita_item.get('tags')
+
+        view = self.window.active_view()
+        item_data['body'] = view.substr(sublime.Region(0, view.size()))
+
+        return bytes(json.dumps(item_data), 'UTF-8')
+
+class GetItemsThread(threading.Thread):
 
     def __init__(self, window):
         self.window = window
@@ -160,7 +203,7 @@ class QiitaCommandBase(sublime_plugin.WindowCommand):
         return self.window.active_view().settings().get('qiita_item')
 
 
-def api_request(url):
-    res = urllib.request.urlopen(url)
+def api_request(url_or_request):
+    res = urllib.request.urlopen(url_or_request)
     encoding = res.headers.get_content_charset()
     return json.loads(res.read().decode(encoding))
