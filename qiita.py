@@ -12,11 +12,15 @@ from .thread_progress import ThreadProgress
 
 
 def plugin_loaded():
+    global TITLE_LINE
+    global TAGS_LINE
     global BASE_URL
     global HEADERS
     global qiita_user
     global qiita_token
 
+    TITLE_LINE = 0
+    TAGS_LINE = 1
     BASE_URL = 'https://qiita.com/api/v1'
     HEADERS = {"Accept": "application/json", "Content-type": "application/json"}
 
@@ -80,19 +84,41 @@ class QiitaOpenItemUrlCommand(QiitaCommandBase):
         return self.qiita_item() != None and self.qiita_item().get('url') != None
 
 
-class QiitaShowItemInfo(QiitaCommandBase):
-
-    def run(self):
-        str = "uuid: %s \nurl: %s" % (self.qiita_item().get('uuid'), self.qiita_item().get('url'))
-        sublime.message_dialog(str)
-
-    def is_enabled(self):
-        return self.qiita_item() != None and self.qiita_item().get('url') != None
-
-class PostNewItemThread(threading.Thread):
+class BuildItem():
 
     def __init__(self, window):
         self.window = window
+
+    def get_item_data(self):
+        view = self.window.active_view()
+        all_lines = view.lines(sublime.Region(0, view.size()))
+
+        item_data = {}
+
+        item_data['title'] = view.substr(all_lines[TITLE_LINE])
+        item_data['tags'] = self.build_tags(view.substr(all_lines[TAGS_LINE]))
+        item_data['private'] = True
+
+        start = all_lines[TAGS_LINE + 1].begin()
+        body_region = sublime.Region(start, view.size())
+        item_data['body'] = view.substr(body_region)
+
+        return bytes(json.dumps(item_data), 'UTF-8')
+
+    def build_tags(self, line):
+        tags = []
+
+        for tag_str in line.replace(' ', '').split(','):
+            tag = { 'name': tag_str }
+            tags.append(tag)
+
+        return tags
+
+
+class PostNewItemThread(threading.Thread, BuildItem):
+
+    def __init__(self, window):
+        BuildItem.__init__(self, window)
         threading.Thread.__init__(self)
 
     def run(self):
@@ -102,24 +128,8 @@ class PostNewItemThread(threading.Thread):
         req = urllib.request.Request(url, data, HEADERS)
         res = api_request(req)
 
-        webbrowser.open_new_tab(res.get('url'))
 
-    def get_item_data(self):
-        item_data = {}
-
-        # TODO: sample data
-        item_data['title'] = 'sublime post'
-        item_data['tags'] = [{'name': 'test'}]
-        item_data['private'] = True
-
-        view = self.window.active_view()
-        text = view.substr(sublime.Region(0, view.size()))
-        item_data['body'] = text
-
-        return bytes(json.dumps(item_data), 'UTF-8')
-
-
-class UpdateItemThread(threading.Thread):
+class UpdateItemThread(threading.Thread, BuildItem):
 
     def __init__(self, window, uuid):
         self.window = window
@@ -135,17 +145,6 @@ class UpdateItemThread(threading.Thread):
 
         webbrowser.open_new_tab(res.get('url'))
 
-    def get_item_data(self):
-        qiita_item = self.window.active_view().settings().get('qiita_item')
-        item_data = {}
-
-        item_data['title'] = qiita_item.get('title')
-        item_data['tags'] = qiita_item.get('tags')
-
-        view = self.window.active_view()
-        item_data['body'] = view.substr(sublime.Region(0, view.size()))
-
-        return bytes(json.dumps(item_data), 'UTF-8')
 
 class GetItemsThread(threading.Thread):
 
@@ -197,15 +196,19 @@ class GetItemThread(threading.Thread):
         view = sublime.active_window().new_file()
         self.build_view(view, item)
 
-        # info_view = self.window.create_output_panel('qiita_info')
-        # info_view.run_command('append', {'characters': 'タイトル: %s\n' % item.get('title')})
-        # info_view.run_command('append', {'characters': '更新時間: %s\n' % item.get('updated_at')})
-        # info_view.run_command('append', {'characters': '作成時間: %s\n' % item.get('created_at')})
-
-        # self.window.run_command('show_panel', {'panel': 'output.qiita_info'})
     def build_view(self, view, item):
         view.settings().set('qiita_item', item)
 
+        view.run_command('append', {'characters': item.get('title') + "\n"})
+        view.run_command('append', {'characters': self.build_tag_str(item.get('tags')) + "\n"})
         view.run_command('append', {'characters': item.get('raw_body')})
 
+    def build_tag_str(self, tags):
+        tag_str = ''
+        for tag in tags:
+            if len(tag_str) > 0:
+                tag_str += ', '
 
+            tag_str += tag.get('name')
+
+        return tag_str
