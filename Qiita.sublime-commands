@@ -1,7 +1,12 @@
 [
     {
-        "caption": "Qiita: Post New Item",
+        "caption": "Qiita: Post New Private Item",
         "command": "qiita_post_new_item"
+    },
+    {
+        "caption": "Qiita: Post New Public Item",
+        "command": "qiita_post_new_item",
+        "args": {"private": "false"}
     },
     {
         "caption": "Qiita: Get Item List",
