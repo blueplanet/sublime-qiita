@@ -57,8 +57,8 @@ class QiitaCommandBase(sublime_plugin.WindowCommand):
 
 class QiitaPostNewItemCommand(QiitaCommandBase):
 
-    def run(self):
-        thread = PostNewItemThread(self.window)
+    def run(self, private="true"):
+        thread = PostNewItemThread(self.window, private=="true")
         thread.start()
         ThreadProgress(thread, 'Post new item to qiita', 'Done.')
 
@@ -97,8 +97,9 @@ class QiitaOpenItemUrlCommand(QiitaCommandBase):
 
 class BuildItem():
 
-    def __init__(self, window):
+    def __init__(self, window, private):
         self.window = window
+        self.private = private
 
     def get_item_data(self):
         view = self.window.active_view()
@@ -108,7 +109,7 @@ class BuildItem():
 
         item_data['title'] = view.substr(all_lines[TITLE_LINE])
         item_data['tags'] = self.build_tags(view.substr(all_lines[TAGS_LINE]))
-        item_data['private'] = True
+        item_data['private'] = self.private
 
         start = all_lines[TAGS_LINE + 1].begin()
         body_region = sublime.Region(start, view.size())
@@ -128,8 +129,8 @@ class BuildItem():
 
 class PostNewItemThread(threading.Thread, BuildItem):
 
-    def __init__(self, window):
-        BuildItem.__init__(self, window)
+    def __init__(self, window, private):
+        BuildItem.__init__(self, window, private)
         threading.Thread.__init__(self)
 
     def run(self):
