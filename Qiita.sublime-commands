@@ -1,5 +1,9 @@
 [
     {
+        "caption": "Qiita: Login",
+        "command": "qiita_login"
+    },
+    {
         "caption": "Qiita: Post New Private Item",
         "command": "qiita_post_new_item"
     },

@@ -12,21 +12,24 @@ from .thread_progress import ThreadProgress
 
 
 def plugin_loaded():
+    global BASE_SETTING
     global TITLE_LINE
     global TAGS_LINE
     global BASE_URL
     global HEADERS
+
     global qiita_user
     global qiita_token
+    global g_settings
 
+    BASE_SETTING = 'Qiita.sublime-settings'
     TITLE_LINE = 0
     TAGS_LINE = 1
     BASE_URL = 'https://qiita.com/api/v1'
     HEADERS = {"Accept": "application/json", "Content-type": "application/json"}
-
-    settings = sublime.load_settings('Qiita.sublime-settings')
-    qiita_user = settings.get('username')
-    qiita_token = settings.get('token')
+    g_settings = sublime.load_settings(BASE_SETTING)
+    qiita_user = g_settings.get('username')
+    qiita_token = g_settings.get('token')
 
 
 def api_request(url_or_request):
@@ -53,6 +56,36 @@ class QiitaCommandBase(sublime_plugin.WindowCommand):
 
     def qiita_item(self):
         return self.window.active_view().settings().get('qiita_item')
+
+
+class QiitaLoginCommand(QiitaCommandBase):
+
+    def run(self):
+        self.window.show_input_panel('user name for qiita: ', '', self.show_input_password, None, None)
+
+    def show_input_password(self, text):
+        self.url_name = text
+        self.window.show_input_panel('password for qiita: ', '', self.get_token, None, None)
+
+    def get_token(self, text):
+        data = { "url_name": self.url_name, "password": text }
+        data = bytes(json.dumps(data), 'UTF-8')
+        url = BASE_URL + '/auth'
+
+        req = urllib.request.Request(url, data, HEADERS)
+        res = api_request(req)        
+        token = res['token']
+
+        if token != None:
+            g_settings.set('username', self.url_name)
+            g_settings.set('token', token)
+            sublime.save_settings(BASE_SETTING)
+
+            plugin_loaded()
+
+            sublime.message_dialog("Login successed!")
+        else:
+            sublime.message_dialog("Login falid. Please try agin.")
 
 
 class QiitaPostNewItemCommand(QiitaCommandBase):
