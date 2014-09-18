@@ -3,5 +3,8 @@
   "username": "",
 
   // Qiita API token
-  "token": ""
+  "token": "",
+
+  // Full path of the Markdown syntax tmLanguage you're using
+  "syntax": "Packages/Markdown/Markdown.tmLanguage"
 }
