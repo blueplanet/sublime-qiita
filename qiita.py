@@ -73,7 +73,7 @@ class QiitaLoginCommand(QiitaCommandBase):
         url = BASE_URL + '/auth'
 
         req = urllib.request.Request(url, data, HEADERS)
-        res = api_request(req)        
+        res = api_request(req)
         token = res['token']
 
         if token != None:
@@ -238,9 +238,13 @@ class GetItemThread(threading.Thread):
         self.build_view(view, item)
 
     def build_view(self, view, item):
+        item_syntax =  g_settings.get('syntax')
+
         view.settings().set('qiita_item', item)
 
         view.run_command('append', {'characters': item.get('title') + "\n"})
         view.run_command('append', {'characters': build_tag_str(item.get('tags')) + "\n"})
         view.run_command('append', {'characters': item.get('raw_body')})
 
+        view.set_syntax_file(item_syntax)
+        view.settings().get('syntax')

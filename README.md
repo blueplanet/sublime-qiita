@@ -14,3 +14,14 @@
 - `Get Item List`
 - `Update Item`
 - `Open Item Url`
+
+## Syntax option
+Full path of the Markdown syntax tmLanguage you're using.  
+`Preferences > Package Settings > Qiita for Sublime > Settings - User`
+
+e.g.)
+```
+Markdown          : "Packages/Markdown/Markdown.tmLanguage"
+MultiMarkdown     : "Packages/Markdown/MultiMarkdown.tmLanguage"
+Markdown Extended : "Packages/Markdown Extended/Syntaxes/Markdown Extended.tmLanguage"
+```
